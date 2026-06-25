@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#09090b" />
+<title>R$L — Outreach CRM</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  html, body { margin:0; padding:0; background:#09090b; overflow-x:hidden; }
+  .font-display { font-family: 'Bebas Neue', Inter, sans-serif; letter-spacing: 0.02em; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+  .font-sans { font-family: 'Inter', sans-serif; }
+
+  * { -webkit-tap-highlight-color: transparent; }
+  button, a, select, input, textarea, [role="button"] {
+    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.22s ease, opacity 0.18s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  button:active, .rl-tappable:active { transform: scale(0.96); }
+
+  @keyframes rlFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes rlScaleIn { from { opacity: 0; transform: scale(0.94) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes rlSlideUp { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes rlSlideDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes rlPopIn { from { opacity: 0; transform: scale(0.5) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes rlGlowPulseRed { 0%, 100% { box-shadow: 0 0 0 rgba(220,38,38,0); } 50% { box-shadow: 0 0 22px rgba(220,38,38,0.5); } }
+  @keyframes rlGlowPulseBlue { 0%, 100% { box-shadow: 0 0 0 rgba(59,130,246,0); } 50% { box-shadow: 0 0 18px rgba(59,130,246,0.45); } }
+  @keyframes rlShimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  @keyframes rlBounceIn { 0% { opacity: 0; transform: scale(0.3); } 60% { opacity: 1; transform: scale(1.08); } 100% { transform: scale(1); } }
+
+  .rl-fade-in { animation: rlFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .rl-scale-in { animation: rlScaleIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .rl-slide-down { animation: rlSlideDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .rl-pop-in { animation: rlPopIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .rl-glow-red { animation: rlGlowPulseRed 2.6s ease-in-out infinite; }
+  .rl-glow-blue { animation: rlGlowPulseBlue 2.6s ease-in-out infinite; }
+
+  .rl-card { transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease; }
+  .rl-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.45); }
+  .rl-card:active { transform: translateY(-1px) scale(0.98); }
+
+  .rl-glow-hover-red:hover { box-shadow: 0 0 24px rgba(220,38,38,0.5); }
+  .rl-glow-hover-blue:hover { box-shadow: 0 0 20px rgba(59,130,246,0.45); }
+  .rl-active-nav { box-shadow: inset 2px 0 0 #60a5fa, 0 0 14px rgba(59,130,246,0.25); }
+
+  .rl-skeleton { background: linear-gradient(90deg, #18181b 25%, #27272a 37%, #18181b 63%); background-size: 400% 100%; animation: rlShimmer 1.6s ease-in-out infinite; }
+
+  .rl-stagger { opacity: 0; animation: rlFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  .rl-modal-backdrop { animation: rlFadeIn 0.25s ease both; }
+  @media (max-width: 767px) {
+    .rl-modal-sheet {
+      position: fixed !important; left: 0; right: 0; bottom: 0; top: auto !important;
+      max-width: 100% !important; width: 100% !important;
+      border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important;
+      border-top-left-radius: 20px !important; border-top-right-radius: 20px !important;
+      max-height: 86vh !important;
+      animation: rlSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .rl-modal-sheet-handle { display: block !important; }
+  }
+  .rl-modal-sheet-handle { display: none; }
+
+  .rl-fab { animation: rlBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div id="loading-fallback" style="min-height:100vh;background:#09090b;color:#71717a;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:24px;">
+    Loading R$L CRM… (needs internet the first time it opens)
+  </div>
+</div>
+<script>
+  window.__rlBootTimer = setTimeout(function () {
+    var el = document.getElementById("loading-fallback");
+    if (el) {
+      el.innerHTML = "Couldn't load. Make sure you have an internet connection (Airplane Mode off, Wi-Fi or data on), then close and reopen this page.";
+      el.style.color = "#f87171";
+    }
+  }, 8000);
+</script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ---------------- constants ---------------- */
+const LOCAL_KEY = "rl_crm_data_v1";
+const CONFIG_KEY = "rl_crm_sync_config_v1";
+
+const STAGES = [
+  { id: "intro", label: "Introduction", color: "#3b82f6" },
+  { id: "value", label: "Value First", color: "#eab308" },
+  { id: "negotiation", label: "Negotiation", color: "#f97316" },
+  { id: "won", label: "Closed Won", color: "#22c55e" },
+  { id: "lost", label: "Closed Lost", color: "#ef4444" },
+];
+const GENRES = ["Hip-Hop", "Trap", "R&B", "Afrobeats", "Pop", "Drill", "Lo-Fi", "Reggaeton"];
+const FOLLOWUP_SCHEDULE = [
+  { day: 0, label: "Introduction message" },
+  { day: 3, label: "First follow-up" },
+  { day: 7, label: "Free value offer" },
+  { day: 14, label: "Relationship builder" },
+  { day: 21, label: "Soft pitch" },
+  { day: 30, label: "Final follow-up" },
+];
+const NOTIF_LABELS = { reply: "Reply received", hot: "Hot lead", overdue: "Overdue follow-up", negotiation: "Active negotiation" };
+
+/* ---------------- icons (hand-drawn, generic, no external icon lib needed) ---------------- */
+const ICON_PATHS = {
+  search: <><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></>,
+  x: <><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></>,
+  plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+  menu: <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></>,
+  chevronLeft: <polyline points="15 18 9 12 15 6"/>,
+  chevronRight: <polyline points="9 18 15 12 9 6"/>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></>,
+  trash: <><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></>,
+  copy: <><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></>,
+  send: <><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></>,
+  externalLink: <><path d="M14 4h6v6"/><line x1="20" y1="4" x2="10" y2="14"/><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></>,
+  clock: <><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></>,
+  checkCircle: <><circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/></>,
+  moreVertical: <><circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.2" fill="currentColor" stroke="none"/></>,
+  filter: <path d="M4 4h16l-6 8v7l-4 2v-9z"/>,
+  dashboard: <><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></>,
+  pipeline: <><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></>,
+  database: <><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></>,
+  barChart: <><line x1="6" y1="20" x2="6" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></>,
+  listChecks: <><polyline points="3 7 5 9 9 5"/><line x1="13" y1="6" x2="21" y2="6"/><polyline points="3 15 5 17 9 13"/><line x1="13" y1="16" x2="21" y2="16"/></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+  messageSquare: <path d="M21 11.5a8.38 8.38 0 0 1-1.9 5.4L21 21l-4.3-1.1a8.5 8.5 0 1 1 4.3-8.4z"/>,
+  dollarSign: <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h2a3.5 3.5 0 0 1 0 7H7"/></>,
+  target: <><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></>,
+  flame: <path d="M12 2c1 4-4 5-4 9a4 4 0 0 0 8 0c0-1-1-2-1-2 1 3-1 5-3 5s-3-2-3-4c0-3 3-4 3-8z"/>,
+  trendingUp: <><polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/></>,
+  alertCircle: <><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.3" r="0.6" fill="currentColor" stroke="none"/></>,
+  cloud: <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>,
+  cloudOff: <><path d="M18 10h-1.26A8 8 0 0 0 9.27 4.27"/><path d="M5.5 7.5A8 8 0 0 0 9 20h7a5 5 0 0 0 1.6-.4"/><line x1="2" y1="2" x2="22" y2="22"/></>,
+};
+function Ic({ name, size = 16, className = "" }) {
+  const path = ICON_PATHS[name];
+  if (!path) return null;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {path}
+    </svg>
+  );
+}
+
+/* ---------------- helpers ---------------- */
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function emptyArtist() {
+  return {
+    id: uid(),
+    name: "", igHandle: "", igUrl: "", email: "", phone: "", location: "",
+    genre: "", subgenre: "", followers: 0, monthlyListeners: 0, website: "",
+    stage: "intro", relationshipScore: 5, priority: "medium",
+    lastContact: "", nextFollowUp: "", birthday: "", referralSource: "",
+    previousPurchases: 0, totalRevenue: 0, lifetimeValue: 0,
+    favoriteBeatStyle: "", budgetRange: "",
+    notes: "", personalNotes: "", collabIdeas: "",
+    interestScore: 5, dateContacted: "", firstMessageSent: "", viewed: false, replied: false,
+    freeBeatSent: false, freeLoopSent: false, freeDrumKitSent: false, customGiftSent: false,
+    downloadLink: "", followUpDate: "", artistFeedback: "",
+    priceOffered: "", counterOffer: "", licensingType: "", negotiationNotes: "",
+    estimatedDealValue: "", probabilityClosing: 50,
+    saleAmount: "", licenseType: "", dateClosed: "", projectNotes: "",
+    reasonLost: "", competitorChosen: "", futureFollowUpDate: "",
+    createdAt: new Date().toISOString(),
+    timeline: [],
+  };
+}
+
+function sampleArtists() {
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const daysFromNow = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return iso(d); };
+  const now = () => new Date().toISOString();
+  return [
+    { ...emptyArtist(), name: "Kayo Vex", igHandle: "@kayovex", genre: "Trap", location: "Atlanta, GA",
+      followers: 84000, monthlyListeners: 32000, stage: "negotiation", relationshipScore: 8, priority: "high",
+      replied: true, dateContacted: daysFromNow(-14), lastContact: daysFromNow(-2), nextFollowUp: daysFromNow(1),
+      priceOffered: "450", counterOffer: "300", licensingType: "Exclusive", estimatedDealValue: "450",
+      probabilityClosing: 70, previousPurchases: 1, totalRevenue: 150, favoriteBeatStyle: "Dark trap, 808-heavy",
+      timeline: [{ id: uid(), type: "note", text: "Profile created", ts: now() }] },
+    { ...emptyArtist(), name: "Lunara", igHandle: "@lunara.sounds", genre: "R&B", location: "Los Angeles, CA",
+      followers: 41000, monthlyListeners: 18000, stage: "value", relationshipScore: 6, priority: "medium",
+      replied: true, dateContacted: daysFromNow(-9), lastContact: daysFromNow(-3), nextFollowUp: daysFromNow(2),
+      freeBeatSent: true, downloadLink: "drive.google.com/lunara-beat", artistFeedback: "Loved the chords, wants a faster version",
+      timeline: [{ id: uid(), type: "note", text: "Profile created", ts: now() }] },
+    { ...emptyArtist(), name: "Dre Holloway", igHandle: "@dreholloway", genre: "Hip-Hop", location: "Chicago, IL",
+      followers: 12500, monthlyListeners: 4200, stage: "intro", relationshipScore: 3, priority: "low",
+      replied: false, viewed: true, dateContacted: daysFromNow(-1), interestScore: 4,
+      timeline: [{ id: uid(), type: "note", text: "Profile created", ts: now() }] },
+    { ...emptyArtist(), name: "Mira Sol", igHandle: "@mirasolmusic", genre: "Afrobeats", location: "London, UK",
+      followers: 156000, monthlyListeners: 67000, stage: "won", relationshipScore: 9, priority: "high",
+      replied: true, saleAmount: "800", licenseType: "Exclusive", dateClosed: daysFromNow(-20),
+      previousPurchases: 2, totalRevenue: 800, lifetimeValue: 800,
+      timeline: [{ id: uid(), type: "note", text: "Profile created", ts: now() }] },
+    { ...emptyArtist(), name: "Zane Kruse", igHandle: "@zanekruse", genre: "Drill", location: "Brooklyn, NY",
+      followers: 9800, monthlyListeners: 2100, stage: "lost", relationshipScore: 2, priority: "low",
+      reasonLost: "Went with a beat from a friend", competitorChosen: "In-house producer", futureFollowUpDate: daysFromNow(60),
+      timeline: [{ id: uid(), type: "note", text: "Profile created", ts: now() }] },
+    { ...emptyArtist(), name: "Iris Vane", igHandle: "@irisvane", genre: "Pop", location: "Toronto, ON",
+      followers: 220000, monthlyListeners: 95000, stage: "negotiation", relationshipScore: 7, priority: "high",
+      replied: true, priceOffered: "1200", counterOffer: "900", licensingType: "Non-exclusive", estimatedDealValue: "1000", probabilityClosing: 55,
+      timeline: [{ id: uid(), type: "note", text: "Profile created", ts: now() }] },
+  ];
+}
+
+function formatCompact(n) {
+  n = Number(n) || 0;
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+  return String(n);
+}
+function formatCurrency(n) {
+  n = parseFloat(n) || 0;
+  return "$" + n.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+function timeAgo(iso) {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+function calcLeadScore(a) {
+  let score = 0;
+  const f = Number(a.followers) || 0;
+  score += Math.min(20, Math.log10(f + 1) * 4);
+  score += (Number(a.relationshipScore) || 0) * 2;
+  score += a.replied ? 15 : 0;
+  score += Math.min(20, (Number(a.previousPurchases) || 0) * 10);
+  const stageBonus = { intro: 2, value: 6, negotiation: 10, won: 15, lost: 0 };
+  score += stageBonus[a.stage] || 0;
+  const pri = { high: 10, medium: 5, low: 2 };
+  score += pri[a.priority] || 0;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+function leadCategory(score) {
+  if (score >= 90) return "Hot";
+  if (score >= 70) return "Warm";
+  if (score >= 40) return "Medium";
+  return "Cold";
+}
+function leadColor(cat) {
+  if (cat === "Hot") return "#fb7185";
+  if (cat === "Warm") return "#f97316";
+  if (cat === "Medium") return "#38bdf8";
+  return "#71717a";
+}
+function getMonthlyRevenue(artists) {
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleString("en-US", { month: "short" }), revenue: 0 });
+  }
+  artists.forEach((a) => {
+    if (a.stage === "won" && a.dateClosed) {
+      const d = new Date(a.dateClosed);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const m = months.find((mo) => mo.key === key);
+      if (m) m.revenue += parseFloat(a.saleAmount) || 0;
+    }
+  });
+  return months;
+}
+function suggestFollowUp(a) {
+  if (!a.dateContacted) return null;
+  const start = new Date(a.dateContacted);
+  const now = new Date();
+  const daysSince = Math.floor((now - start) / 86400000);
+  const next = FOLLOWUP_SCHEDULE.find((s) => s.day > daysSince);
+  if (!next) return null;
+  const date = new Date(start);
+  date.setDate(date.getDate() + next.day);
+  return { date: date.toISOString().slice(0, 10), label: next.label, day: next.day };
+}
+function quickDmTemplate(a) {
+  const stage = a.stage;
+  const name = a.name || "there";
+  const genre = a.genre || "your sound";
+  const city = a.location || "";
+  if (stage === "intro") return `Hey ${name}! Been bumping your ${genre} stuff${city ? ` out of ${city}` : ""} — I produce and wanted to send over a free beat that might fit. Let me know if you want me to send it!`;
+  if (stage === "value") return `Hey ${name}, just checking if you got a chance to listen to that beat I sent — happy to send a couple more options if it's not quite right.`;
+  if (stage === "negotiation") return `Hey ${name}, totally hear you on the price — let's find a number that works for both of us. What were you thinking?`;
+  if (stage === "won") return `Hey ${name}, thanks again for working with me — sending the final files now. Let's keep cooking!`;
+  return `Hey ${name}, no worries if the timing wasn't right before — keeping the door open if you ever want to work together.`;
+}
+async function copyToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+    return true;
+  } catch (e) { return false; }
+}
+function buildAutoTimelineEntries(prev, next) {
+  const entries = [];
+  const now = new Date().toISOString();
+  if (prev.stage !== next.stage) entries.push({ id: uid(), type: "stage", text: `Moved to ${STAGES.find((s) => s.id === next.stage)?.label}`, ts: now });
+  if (!prev.replied && next.replied) entries.push({ id: uid(), type: "reply", text: "Marked as replied", ts: now });
+  if (prev.priceOffered !== next.priceOffered && next.priceOffered) entries.push({ id: uid(), type: "offer", text: `Price offered: $${next.priceOffered}`, ts: now });
+  if (prev.counterOffer !== next.counterOffer && next.counterOffer) entries.push({ id: uid(), type: "offer", text: `Counter offer received: $${next.counterOffer}`, ts: now });
+  if (prev.nextFollowUp !== next.nextFollowUp && next.nextFollowUp) entries.push({ id: uid(), type: "followup", text: `Follow-up scheduled for ${next.nextFollowUp}`, ts: now });
+  if (prev.stage !== "won" && next.stage === "won" && next.saleAmount) entries.push({ id: uid(), type: "deal", text: `Deal closed: $${next.saleAmount} (${next.licenseType || "license n/a"})`, ts: now });
+  if (!prev.freeBeatSent && next.freeBeatSent) entries.push({ id: uid(), type: "dm", text: "Free beat sent", ts: now });
+  if (!prev.freeLoopSent && next.freeLoopSent) entries.push({ id: uid(), type: "dm", text: "Free loop sent", ts: now });
+  return entries;
+}
+
+const CSV_FIELDS = Object.keys(emptyArtist()).filter((k) => k !== "timeline");
+const CSV_BOOL_FIELDS = ["viewed", "replied", "freeBeatSent", "freeLoopSent", "freeDrumKitSent", "customGiftSent"];
+const CSV_NUM_FIELDS = ["followers", "monthlyListeners", "relationshipScore", "previousPurchases", "totalRevenue", "lifetimeValue", "interestScore", "probabilityClosing"];
+
+function exportCSV(artists) {
+  const rows = artists.map((a) => {
+    const row = {};
+    CSV_FIELDS.forEach((k) => { let v = a[k]; if (typeof v === "boolean") v = v ? "TRUE" : "FALSE"; row[k] = v ?? ""; });
+    return row;
+  });
+  const csv = Papa.unparse(rows);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = `rl-crm-export-${todayStr()}.csv`;
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+function parseCSVFile(file, onDone, onError) {
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true,
+    complete: (results) => {
+      try {
+        const imported = results.data.map((row) => {
+          const a = emptyArtist();
+          CSV_FIELDS.forEach((k) => { if (row[k] !== undefined) a[k] = row[k]; });
+          CSV_BOOL_FIELDS.forEach((k) => { a[k] = String(a[k]).toUpperCase() === "TRUE"; });
+          CSV_NUM_FIELDS.forEach((k) => { a[k] = Number(a[k]) || 0; });
+          a.id = uid();
+          a.timeline = [{ id: uid(), type: "note", text: "Imported from CSV", ts: new Date().toISOString() }];
+          return a;
+        }).filter((a) => a.name);
+        onDone(imported);
+      } catch (e) { onError(); }
+    },
+    error: () => onError(),
+  });
+}
+
+/* ---------------- sync (Supabase REST, no SDK needed) ---------------- */
+async function supabaseGetRow(config) {
+  const res = await fetch(`${config.url}/rest/v1/crm_store?id=eq.main&select=data,updated_at`, {
+    headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}` },
+  });
+  if (!res.ok) throw new Error(`Sync read failed (${res.status})`);
+  const rows = await res.json();
+  return rows && rows[0] ? rows[0] : null;
+}
+async function supabasePutRow(config, payload) {
+  const res = await fetch(`${config.url}/rest/v1/crm_store`, {
+    method: "POST",
+    headers: { apikey: config.anonKey, Authorization: `Bearer ${config.anonKey}`, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify([{ id: "main", data: payload, updated_at: new Date().toISOString() }]),
+  });
+  if (!res.ok) throw new Error(`Sync write failed (${res.status})`);
+  return true;
+}
+
+const inputCls = "w-full bg-zinc-800 border border-zinc-700 rounded-md px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
+
+/* ---------------- small components ---------------- */
+function ScoreMeter({ score }) {
+  const bars = 10;
+  const filled = Math.round(score / 10);
+  const cat = leadCategory(score);
+  const color = leadColor(cat);
+  return (
+    <div className="flex items-end gap-0.5 h-4" title={`${score} — ${cat} lead`}>
+      {Array.from({ length: bars }).map((_, i) => (
+        <div key={i} style={{ height: `${(i + 1) * 10}%`, background: i < filled ? color : "rgba(255,255,255,0.08)" }} className="w-1 rounded-sm transition-all duration-300" />
+      ))}
+    </div>
+  );
+}
+const AVATAR_COLORS = ["#dc2626", "#2563eb", "#d97706", "#7c3aed", "#0d9488", "#db2777", "#16a34a", "#4f46e5"];
+function avatarColor(name) {
+  const str = name || "?";
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
+function getInitials(name) {
+  if (!name || !name.trim()) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+function Avatar({ name, size = 36 }) {
+  return (
+    <div
+      className="rounded-full flex items-center justify-center flex-none font-display"
+      style={{ width: size, height: size, background: avatarColor(name), color: "white", fontSize: size * 0.38, lineHeight: 1 }}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
+
+function AnimatedNumber({ value, formatFn, duration = 700 }) {
+  const [display, setDisplay] = useState(0);
+  const fromRef = useRef(0);
+  useEffect(() => {
+    const from = fromRef.current;
+    const target = Number(value) || 0;
+    const start = performance.now();
+    let raf;
+    function tick(now) {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(from + (target - from) * eased);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+      else fromRef.current = target;
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{formatFn ? formatFn(display) : Math.round(display)}</>;
+}
+
+function StatCard({ icon, label, value, sub, accent, numericValue, formatFn }) {
+  return (
+    <div className="rl-card min-w-0 bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-mono uppercase tracking-wide text-zinc-500">{label}</span>
+        <Ic name={icon} size={16} className={accent ? "text-red-500" : "text-zinc-500"} />
+      </div>
+      <div className="text-2xl font-display text-zinc-50">
+        {numericValue !== undefined ? <AnimatedNumber value={numericValue} formatFn={formatFn} /> : value}
+      </div>
+      {sub ? <div className="text-xs text-zinc-500">{sub}</div> : null}
+    </div>
+  );
+}
+function Field({ label, children, className }) {
+  return (
+    <label className={`block mb-3 ${className || ""}`}>
+      <span className="block text-xs font-mono uppercase tracking-wide text-zinc-500 mb-1">{label}</span>
+      {children}
+    </label>
+  );
+}
+function GrowBar({ widthPercent, color }) {
+  const [w, setW] = useState(0);
+  useEffect(() => { const t = setTimeout(() => setW(widthPercent), 60); return () => clearTimeout(t); }, [widthPercent]);
+  return <div style={{ width: `${w}%`, background: color }} className="h-6 rounded transition-all duration-700" />;
+}
+
+function MiniBarChart({ data, valueKey, labelKey, color, formatValue }) {
+  const max = Math.max(1, ...data.map((d) => d[valueKey]));
+  return (
+    <div className="flex items-end gap-2" style={{ height: 200 }}>
+      {data.map((d, i) => (
+        <div key={i} className="flex-1 min-w-0 flex flex-col items-center gap-1 h-full">
+          <span className="text-xs text-zinc-500 font-mono">{formatValue ? formatValue(d[valueKey]) : d[valueKey]}</span>
+          <div className="w-full bg-zinc-800 rounded-t flex items-end flex-1">
+            <div style={{ height: `${(d[valueKey] / max) * 100}%`, background: color || "#dc2626" }} className="w-full rounded-t transition-all duration-500" />
+          </div>
+          <span className="text-xs text-zinc-500 font-mono truncate w-full text-center">{d[labelKey]}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ArtistCard({ artist, onOpen, onDragStart, onMoveStage, onCopyHandle, onCopyDM, onOpenIG, onQuickFollowUp, style }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const score = calcLeadScore(artist);
+  const cat = leadCategory(score);
+  return (
+    <div draggable onDragStart={(e) => onDragStart(e, artist.id)} onClick={() => onOpen(artist)} style={style}
+      className="rl-card rl-stagger relative bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-lg p-3 cursor-pointer">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Avatar name={artist.name} size={36} />
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-zinc-100 truncate">{artist.name || "Unnamed artist"}</div>
+            <div className="text-xs text-zinc-500">@{(artist.igHandle || "no-handle").replace(/^@/, "")}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 flex-none">
+          <ScoreMeter score={score} />
+          <button onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }} className="text-zinc-500 hover:text-zinc-200 p-0.5 rl-tappable">
+            <Ic name="moreVertical" size={14} />
+          </button>
+        </div>
+      </div>
+      {menuOpen && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }} />
+          <div onClick={(e) => e.stopPropagation()} className="rl-scale-in absolute right-2 top-10 z-40 bg-zinc-800 border border-zinc-700 rounded-lg shadow-2xl py-1 w-44">
+            <button onClick={() => { onCopyHandle(artist); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700"><Ic name="copy" size={12} /> Copy handle</button>
+            <button onClick={() => { onCopyDM(artist); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700"><Ic name="send" size={12} /> Copy quick DM</button>
+            <button onClick={() => { onOpenIG(artist); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700"><Ic name="externalLink" size={12} /> Open Instagram</button>
+            <button onClick={() => { onQuickFollowUp(artist.id, 3); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700"><Ic name="clock" size={12} /> Follow up in 3 days</button>
+            <button onClick={() => { onQuickFollowUp(artist.id, 7); setMenuOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-700"><Ic name="clock" size={12} /> Follow up in 7 days</button>
+          </div>
+        </>
+      )}
+      <div className="flex items-center gap-2 mt-2 text-xs text-zinc-500">
+        {artist.genre ? <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">{artist.genre}</span> : null}
+        {artist.followers ? <span>{formatCompact(artist.followers)} followers</span> : null}
+      </div>
+      <div className="flex items-center justify-between mt-3">
+        <span className="text-xs font-mono uppercase px-1.5 py-0.5 rounded" style={{ color: leadColor(cat), background: `${leadColor(cat)}1A` }}>{cat}</span>
+        <select value={artist.stage} onClick={(e) => e.stopPropagation()} onChange={(e) => onMoveStage(artist.id, e.target.value)} className="bg-zinc-800 border border-zinc-700 rounded text-xs px-1.5 py-1 text-zinc-300">
+          {STAGES.map((s) => (<option key={s.id} value={s.id}>{s.label}</option>))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+function ArtistModal({ artist, isNew, onClose, onSave, onDelete }) {
+  const [form, setForm] = useState(artist);
+  const [tab, setTab] = useState("basic");
+  const [newEntryType, setNewEntryType] = useState("note");
+  const [newEntryText, setNewEntryText] = useState("");
+
+  function set(key, value) { setForm((f) => ({ ...f, [key]: value })); }
+  function addManualEntry() {
+    if (!newEntryText.trim()) return;
+    setForm((f) => ({ ...f, timeline: [{ id: uid(), type: newEntryType, text: newEntryText.trim(), ts: new Date().toISOString() }, ...(f.timeline || [])] }));
+    setNewEntryText("");
+  }
+  function handleSave() {
+    if (!form.name.trim()) { alert("Give this artist a name before saving."); return; }
+    onSave(form);
+  }
+
+  const tabs = [
+    { id: "basic", label: "Basic" }, { id: "relationship", label: "Relationship" }, { id: "business", label: "Business" },
+    { id: "stage", label: "Stage details" }, { id: "timeline", label: "Timeline" }, { id: "notes", label: "Notes" },
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
+      <div className="rl-modal-backdrop absolute inset-0 bg-black/70" onClick={onClose} />
+      <datalist id="genre-options">{GENRES.map((g) => (<option key={g} value={g} />))}</datalist>
+      <div className="rl-modal-sheet rl-scale-in relative bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl flex flex-col overflow-hidden" style={{ maxHeight: "88vh" }}>
+        <div className="rl-modal-sheet-handle w-full flex justify-center pt-2 pb-1"><div className="w-10 h-1 rounded-full bg-zinc-700" /></div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+          <div>
+            <h2 className="font-display text-xl text-zinc-50">{isNew ? "Add artist" : form.name || "Edit artist"}</h2>
+            <p className="text-xs text-zinc-500 font-mono">{isNew ? "New profile" : `Stage: ${STAGES.find((s) => s.id === form.stage)?.label}`}</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200"><Ic name="x" size={20} /></button>
+        </div>
+        <div className="flex gap-1 px-5 pt-3 border-b border-zinc-800 overflow-x-auto">
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)} className={`text-xs font-mono uppercase tracking-wide px-3 py-2 rounded-t-md whitespace-nowrap ${tab === t.id ? "text-blue-400 border-b-2 border-blue-400" : "text-zinc-500 hover:text-zinc-300"}`}>{t.label}</button>
+          ))}
+        </div>
+        <div className="overflow-y-auto px-5 py-4 flex-1">
+          {tab === "basic" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              <Field label="Artist name"><input className={inputCls} value={form.name} onChange={(e) => set("name", e.target.value)} /></Field>
+              <Field label="Instagram handle"><input className={inputCls} placeholder="@handle" value={form.igHandle} onChange={(e) => set("igHandle", e.target.value)} /></Field>
+              <Field label="Instagram URL"><input className={inputCls} value={form.igUrl} onChange={(e) => set("igUrl", e.target.value)} /></Field>
+              <Field label="Email"><input className={inputCls} value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
+              <Field label="Phone (optional)"><input className={inputCls} value={form.phone} onChange={(e) => set("phone", e.target.value)} /></Field>
+              <Field label="Location"><input className={inputCls} value={form.location} onChange={(e) => set("location", e.target.value)} /></Field>
+              <Field label="Genre"><input className={inputCls} list="genre-options" placeholder="e.g. Trap" value={form.genre} onChange={(e) => set("genre", e.target.value)} /></Field>
+              <Field label="Subgenre"><input className={inputCls} value={form.subgenre} onChange={(e) => set("subgenre", e.target.value)} /></Field>
+              <Field label="Followers"><input type="number" className={inputCls} value={form.followers} onChange={(e) => set("followers", e.target.value)} /></Field>
+              <Field label="Monthly listeners"><input type="number" className={inputCls} value={form.monthlyListeners} onChange={(e) => set("monthlyListeners", e.target.value)} /></Field>
+              <Field label="Website"><input className={inputCls} value={form.website} onChange={(e) => set("website", e.target.value)} /></Field>
+              <Field label="Pipeline stage">
+                <select className={inputCls} value={form.stage} onChange={(e) => set("stage", e.target.value)}>{STAGES.map((s) => (<option key={s.id} value={s.id}>{s.label}</option>))}</select>
+              </Field>
+            </div>
+          )}
+          {tab === "relationship" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              <Field label="Relationship score (0-10)"><input type="number" min="0" max="10" className={inputCls} value={form.relationshipScore} onChange={(e) => set("relationshipScore", e.target.value)} /></Field>
+              <Field label="Priority">
+                <select className={inputCls} value={form.priority} onChange={(e) => set("priority", e.target.value)}><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+              </Field>
+              <Field label="Last contact date"><input type="date" className={inputCls} value={form.lastContact} onChange={(e) => set("lastContact", e.target.value)} /></Field>
+              <Field label="Next follow-up date"><input type="date" className={inputCls} value={form.nextFollowUp} onChange={(e) => set("nextFollowUp", e.target.value)} /></Field>
+              <Field label="Birthday (optional)"><input type="date" className={inputCls} value={form.birthday} onChange={(e) => set("birthday", e.target.value)} /></Field>
+              <Field label="Referral source"><input className={inputCls} value={form.referralSource} onChange={(e) => set("referralSource", e.target.value)} /></Field>
+            </div>
+          )}
+          {tab === "business" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              <Field label="Previous purchases"><input type="number" className={inputCls} value={form.previousPurchases} onChange={(e) => set("previousPurchases", e.target.value)} /></Field>
+              <Field label="Total revenue generated"><input type="number" className={inputCls} value={form.totalRevenue} onChange={(e) => set("totalRevenue", e.target.value)} /></Field>
+              <Field label="Lifetime value"><input type="number" className={inputCls} value={form.lifetimeValue} onChange={(e) => set("lifetimeValue", e.target.value)} /></Field>
+              <Field label="Favorite beat style"><input className={inputCls} value={form.favoriteBeatStyle} onChange={(e) => set("favoriteBeatStyle", e.target.value)} /></Field>
+              <Field label="Budget range"><input className={inputCls} value={form.budgetRange} onChange={(e) => set("budgetRange", e.target.value)} /></Field>
+            </div>
+          )}
+          {tab === "stage" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+              {form.stage === "intro" && (<>
+                <Field label="Date contacted"><input type="date" className={inputCls} value={form.dateContacted} onChange={(e) => set("dateContacted", e.target.value)} /></Field>
+                <Field label="Interest score (1-10)"><input type="number" min="1" max="10" className={inputCls} value={form.interestScore} onChange={(e) => set("interestScore", e.target.value)} /></Field>
+                <Field label="First message sent" className="sm:col-span-2"><textarea className={inputCls} rows={2} value={form.firstMessageSent} onChange={(e) => set("firstMessageSent", e.target.value)} /></Field>
+                <Field label="Viewed"><select className={inputCls} value={form.viewed ? "yes" : "no"} onChange={(e) => set("viewed", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
+                <Field label="Replied"><select className={inputCls} value={form.replied ? "yes" : "no"} onChange={(e) => set("replied", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
+              </>)}
+              {form.stage === "value" && (<>
+                <Field label="Free beat sent"><select className={inputCls} value={form.freeBeatSent ? "yes" : "no"} onChange={(e) => set("freeBeatSent", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
+                <Field label="Free loop sent"><select className={inputCls} value={form.freeLoopSent ? "yes" : "no"} onChange={(e) => set("freeLoopSent", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
+                <Field label="Free drum kit sent"><select className={inputCls} value={form.freeDrumKitSent ? "yes" : "no"} onChange={(e) => set("freeDrumKitSent", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
+                <Field label="Custom gift sent"><select className={inputCls} value={form.customGiftSent ? "yes" : "no"} onChange={(e) => set("customGiftSent", e.target.value === "yes")}><option value="no">No</option><option value="yes">Yes</option></select></Field>
+                <Field label="Download link"><input className={inputCls} value={form.downloadLink} onChange={(e) => set("downloadLink", e.target.value)} /></Field>
+                <Field label="Follow-up date"><input type="date" className={inputCls} value={form.followUpDate} onChange={(e) => set("followUpDate", e.target.value)} /></Field>
+                <Field label="Artist feedback" className="sm:col-span-2"><textarea className={inputCls} rows={2} value={form.artistFeedback} onChange={(e) => set("artistFeedback", e.target.value)} /></Field>
+              </>)}
+              {form.stage === "negotiation" && (<>
+                <Field label="Price offered"><input className={inputCls} value={form.priceOffered} onChange={(e) => set("priceOffered", e.target.value)} /></Field>
+                <Field label="Counter offer"><input className={inputCls} value={form.counterOffer} onChange={(e) => set("counterOffer", e.target.value)} /></Field>
+                <Field label="Licensing type"><input className={inputCls} value={form.licensingType} onChange={(e) => set("licensingType", e.target.value)} /></Field>
+                <Field label="Estimated deal value"><input className={inputCls} value={form.estimatedDealValue} onChange={(e) => set("estimatedDealValue", e.target.value)} /></Field>
+                <Field label="Probability of closing (%)"><input type="number" min="0" max="100" className={inputCls} value={form.probabilityClosing} onChange={(e) => set("probabilityClosing", e.target.value)} /></Field>
+                <Field label="Negotiation notes" className="sm:col-span-2"><textarea className={inputCls} rows={2} value={form.negotiationNotes} onChange={(e) => set("negotiationNotes", e.target.value)} /></Field>
+              </>)}
+              {form.stage === "won" && (<>
+                <Field label="Sale amount"><input className={inputCls} value={form.saleAmount} onChange={(e) => set("saleAmount", e.target.value)} /></Field>
+                <Field label="License type"><input className={inputCls} value={form.licenseType} onChange={(e) => set("licenseType", e.target.value)} /></Field>
+                <Field label="Date closed"><input type="date" className={inputCls} value={form.dateClosed} onChange={(e) => set("dateClosed", e.target.value)} /></Field>
+                <Field label="Project notes" className="sm:col-span-2"><textarea className={inputCls} rows={2} value={form.projectNotes} onChange={(e) => set("projectNotes", e.target.value)} /></Field>
+              </>)}
+              {form.stage === "lost" && (<>
+                <Field label="Reason lost" className="sm:col-span-2"><textarea className={inputCls} rows={2} value={form.reasonLost} onChange={(e) => set("reasonLost", e.target.value)} /></Field>
+                <Field label="Competitor chosen"><input className={inputCls} value={form.competitorChosen} onChange={(e) => set("competitorChosen", e.target.value)} /></Field>
+                <Field label="Future follow-up date"><input type="date" className={inputCls} value={form.futureFollowUpDate} onChange={(e) => set("futureFollowUpDate", e.target.value)} /></Field>
+              </>)}
+            </div>
+          )}
+          {tab === "timeline" && (
+            <div>
+              <div className="flex gap-2 mb-4">
+                <select className={inputCls + " flex-none w-40"} value={newEntryType} onChange={(e) => setNewEntryType(e.target.value)}>
+                  <option value="dm">DM sent</option><option value="reply">Reply received</option><option value="offer">Offer made</option>
+                  <option value="followup">Follow-up</option><option value="deal">Deal update</option><option value="note">Note</option>
+                </select>
+                <input className={inputCls} placeholder="What happened?" value={newEntryText} onChange={(e) => setNewEntryText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addManualEntry()} />
+                <button onClick={addManualEntry} className="px-3 py-2 text-sm rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 flex-none">Add</button>
+              </div>
+              {(form.timeline || []).length === 0 ? (
+                <p className="text-sm text-zinc-500 text-center py-8">No activity logged yet for this artist.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {(form.timeline || []).map((t) => (
+                    <li key={t.id} className="flex items-start justify-between gap-3 bg-zinc-800 rounded-lg px-3 py-2">
+                      <div><span className="text-xs font-mono uppercase text-blue-400">{t.type}</span><p className="text-sm text-zinc-200">{t.text}</p></div>
+                      <span className="text-xs font-mono text-zinc-500 whitespace-nowrap">{timeAgo(t.ts)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+          {tab === "notes" && (
+            <div className="grid grid-cols-1 gap-x-4">
+              <Field label="General notes"><textarea className={inputCls} rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
+              <Field label="Personal notes"><textarea className={inputCls} rows={3} value={form.personalNotes} onChange={(e) => set("personalNotes", e.target.value)} /></Field>
+              <Field label="Collaboration ideas"><textarea className={inputCls} rows={3} value={form.collabIdeas} onChange={(e) => set("collabIdeas", e.target.value)} /></Field>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-5 py-4 border-t border-zinc-800">
+          {!isNew ? (<button onClick={() => onDelete(form.id)} className="text-red-400 hover:text-red-300 text-sm flex items-center gap-1"><Ic name="trash" size={14} /> Delete</button>) : <span />}
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 text-sm rounded-md border border-zinc-700 text-zinc-300 hover:bg-zinc-800">Cancel</button>
+            <button onClick={handleSave} className="px-4 py-2 text-sm rounded-md bg-red-600 text-white font-medium hover:bg-red-500">Save artist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({ view, setView, collapsed, mobileOpen, setMobileOpen, stats }) {
+  const items = [
+    { id: "dashboard", label: "Dashboard", icon: "dashboard" }, { id: "pipeline", label: "Pipeline", icon: "pipeline" },
+    { id: "artists", label: "Artists", icon: "database" }, { id: "tasks", label: "Tasks", icon: "listChecks" },
+    { id: "analytics", label: "Analytics", icon: "barChart" },
+  ];
+  return (
+    <>
+      {mobileOpen && <div className="fixed inset-0 z-30 md:hidden bg-black/60" onClick={() => setMobileOpen(false)} />}
+      <aside className={`fixed md:static inset-y-0 left-0 z-40 ${collapsed ? "md:w-16" : "md:w-56"} w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col transition-transform duration-200 transform ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+        <div className="flex items-center justify-between px-4 h-16 border-b border-zinc-800">
+          <div className="flex items-baseline gap-2 overflow-hidden">
+            <span className="font-display text-2xl text-red-500 leading-none">R$L</span>
+            {!collapsed && <span className="text-xs font-mono uppercase text-zinc-500 whitespace-nowrap">Outreach CRM</span>}
+          </div>
+          <button className="md:hidden text-zinc-500" onClick={() => setMobileOpen(false)}><Ic name="x" size={18} /></button>
+        </div>
+        <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
+          {items.map((it) => (
+            <button key={it.id} onClick={() => { setView(it.id); setMobileOpen(false); }}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${view === it.id ? "bg-zinc-800 text-blue-400" : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"}`}>
+              <Ic name={it.icon} size={18} />{!collapsed && <span>{it.label}</span>}
+            </button>
+          ))}
+        </nav>
+        {!collapsed && (
+          <div className="px-4 py-4 border-t border-zinc-800 space-y-1">
+            <div className="text-xs text-zinc-500 font-mono">{stats.total} artists tracked</div>
+            <div className="text-xs text-red-500 font-mono flex items-center gap-1"><Ic name="flame" size={12} /> {stats.hotLeads} hot leads</div>
+          </div>
+        )}
+      </aside>
+    </>
+  );
+}
+
+function NotificationBell({ notifications, open, setOpen, onDismiss, onOpenArtist }) {
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)} className="relative text-zinc-400 hover:text-zinc-200">
+        <Ic name="bell" size={20} />
+        {notifications.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs leading-none px-1.5 py-0.5 font-mono">{notifications.length > 9 ? "9+" : notifications.length}</span>}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="rl-scale-in absolute right-0 mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-40 overflow-hidden">
+            <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between"><span className="text-sm font-medium text-zinc-200">Notifications</span><span className="text-xs text-zinc-500 font-mono">{notifications.length}</span></div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? <p className="text-sm text-zinc-500 px-4 py-6 text-center">You're all caught up.</p> : notifications.map((n) => (
+                <div key={n.id} className="flex items-start justify-between gap-2 px-4 py-3 border-b border-zinc-800 hover:bg-zinc-800">
+                  <button onClick={() => { onOpenArtist(n.artist); setOpen(false); }} className="text-left flex-1 min-w-0"><p className="text-sm text-zinc-200">{n.text}</p><p className="text-xs text-zinc-500 font-mono mt-0.5">{n.typeLabel}</p></button>
+                  <button onClick={() => onDismiss(n.id)} className="text-zinc-600 hover:text-zinc-300 flex-none"><Ic name="x" size={14} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CommandPalette({ open, onClose, items }) {
+  const [q, setQ] = useState(""); const [idx, setIdx] = useState(0); const ref = useRef(null);
+  useEffect(() => { if (open) { setQ(""); setIdx(0); setTimeout(() => ref.current?.focus(), 10); } }, [open]);
+  if (!open) return null;
+  const filtered = items.filter((it) => it.label.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  function handleKey(e) {
+    if (e.key === "ArrowDown") { e.preventDefault(); setIdx((i) => Math.min(i + 1, filtered.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setIdx((i) => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter") { e.preventDefault(); const it = filtered[idx]; if (it) { it.action(); onClose(); } }
+    else if (e.key === "Escape") onClose();
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 p-4">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="rl-scale-in relative bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg overflow-hidden shadow-2xl">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800">
+          <Ic name="search" size={16} className="text-zinc-500" />
+          <input ref={ref} value={q} onChange={(e) => { setQ(e.target.value); setIdx(0); }} onKeyDown={handleKey} placeholder="Type a command or search artists..." className="flex-1 bg-transparent text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none" />
+          <kbd className="text-xs text-zinc-600 font-mono border border-zinc-700 rounded px-1.5">esc</kbd>
+        </div>
+        <div className="max-h-80 overflow-y-auto py-1">
+          {filtered.length === 0 ? <p className="text-sm text-zinc-500 px-4 py-6 text-center">No matches.</p> : filtered.map((it, i) => (
+            <button key={it.id} onClick={() => { it.action(); onClose(); }} className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-sm ${i === idx ? "bg-zinc-800 text-blue-400" : "text-zinc-300 hover:bg-zinc-800"}`}>
+              <span>{it.label}</span>{it.sub && <span className="text-xs text-zinc-500 font-mono">{it.sub}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConnectModal({ open, onClose, config, onSave, onDisconnect, syncStatus, lastSyncedAt }) {
+  const [url, setUrl] = useState(config?.url || "");
+  const [key, setKey] = useState(config?.anonKey || "");
+  const [testing, setTesting] = useState(false);
+  const [testError, setTestError] = useState("");
+  useEffect(() => { setUrl(config?.url || ""); setKey(config?.anonKey || ""); setTestError(""); }, [open]);
+  if (!open) return null;
+
+  async function handleSave() {
+    if (!url.trim() || !key.trim()) { setTestError("Both fields are required."); return; }
+    setTesting(true); setTestError("");
+    const cleanUrl = url.trim().replace(/\/$/, "");
+    try {
+      const res = await fetch(`${cleanUrl}/rest/v1/crm_store?select=id&limit=1`, { headers: { apikey: key.trim(), Authorization: `Bearer ${key.trim()}` } });
+      if (!res.ok) throw new Error(`Connection test failed (${res.status}). Check the table is named "crm_store" and that the anon key has a policy allowing access to it.`);
+      onSave({ url: cleanUrl, anonKey: key.trim() });
+    } catch (e) {
+      setTestError(e.message || "Couldn't connect. Double check the URL and key.");
+    } finally { setTesting(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
+      <div className="rl-modal-backdrop absolute inset-0 bg-black/70" onClick={onClose} />
+      <div className="rl-modal-sheet rl-scale-in relative bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-5 space-y-4">
+        <div className="rl-modal-sheet-handle w-full flex justify-center -mt-2 mb-1"><div className="w-10 h-1 rounded-full bg-zinc-700" /></div>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl text-zinc-50">Cross-device sync</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200"><Ic name="x" size={20} /></button>
+        </div>
+        <p className="text-xs text-zinc-500">Paste your Supabase project URL and anon public key. Free setup takes about 5 minutes.</p>
+        <Field label="Project URL"><input className={inputCls} placeholder="https://xxxx.supabase.co" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
+        <Field label="Anon public key"><input className={inputCls} placeholder="eyJhbGciOi..." value={key} onChange={(e) => setKey(e.target.value)} /></Field>
+        {testError && <p className="text-sm text-red-400">{testError}</p>}
+        {config && (
+          <div className="flex items-center justify-between text-xs text-zinc-500 font-mono bg-zinc-800 rounded-md px-3 py-2">
+            <span>Status: {syncStatus === "synced" ? "Connected" : syncStatus === "syncing" ? "Syncing..." : syncStatus === "error" ? "Connection error" : "Not connected"}</span>
+            {lastSyncedAt && <span>Last: {timeAgo(lastSyncedAt)}</span>}
+          </div>
+        )}
+        <div className="flex justify-between gap-2">
+          {config ? <button onClick={onDisconnect} className="px-3 py-2 text-sm rounded-md border border-red-800 text-red-400 hover:bg-red-950">Disconnect</button> : <span />}
+          <div className="flex gap-2 ml-auto">
+            <button onClick={onClose} className="px-4 py-2 text-sm rounded-md border border-zinc-700 text-zinc-300 hover:bg-zinc-800">Close</button>
+            <button onClick={handleSave} disabled={testing} className="px-4 py-2 text-sm rounded-md bg-red-600 text-white font-medium hover:bg-red-500">{testing ? "Testing..." : "Save & connect"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Topbar({ search, setSearch, onAddArtist, setMobileOpen, collapsed, setCollapsed, notifications, notifOpen, setNotifOpen, onDismissNotif, onOpenArtist, dataMenuOpen, setDataMenuOpen, onExportCSV, onImportClick, onClearAll, fileInputRef, onImportFileChange, syncStatus, onOpenConnect }) {
+  const cloudColor = syncStatus === "synced" ? "text-green-400" : syncStatus === "error" ? "text-red-400" : syncStatus === "syncing" ? "text-blue-400 animate-pulse" : "text-zinc-500";
+  return (
+    <header className="h-16 border-b border-zinc-800 bg-zinc-950 backdrop-blur flex items-center gap-3 px-4 sticky top-0 z-20">
+      
+      <button className="hidden md:flex text-zinc-500 hover:text-zinc-200" onClick={() => setCollapsed(!collapsed)}>{collapsed ? <Ic name="chevronRight" size={18} /> : <Ic name="chevronLeft" size={18} />}</button>
+      <div className="relative flex-1 max-w-md">
+        <Ic name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search artists... (Ctrl+K for commands)" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-9 pr-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div className="flex-1" />
+      <button onClick={onOpenConnect} className={`relative ${cloudColor} hover:opacity-80`} title="Sync settings"><Ic name={syncStatus === "error" ? "cloudOff" : "cloud"} size={20} /></button>
+      <NotificationBell notifications={notifications} open={notifOpen} setOpen={setNotifOpen} onDismiss={onDismissNotif} onOpenArtist={onOpenArtist} />
+      <div className="relative">
+        <button onClick={() => setDataMenuOpen(!dataMenuOpen)} className="text-zinc-400 hover:text-zinc-200"><Ic name="moreVertical" size={20} /></button>
+        {dataMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-30" onClick={() => setDataMenuOpen(false)} />
+            <div className="rl-scale-in absolute right-0 mt-2 w-52 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-40 overflow-hidden py-1">
+              <button onClick={() => { onOpenConnect(); setDataMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800"><Ic name="cloud" size={14} /> Sync settings</button>
+              <div className="border-t border-zinc-800 my-1" />
+              <button onClick={() => { onExportCSV(); setDataMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800"><Ic name="copy" size={14} /> Export CSV</button>
+              <button onClick={() => { onImportClick(); setDataMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800"><Ic name="externalLink" size={14} /> Import CSV</button>
+              <div className="border-t border-zinc-800 my-1" />
+              <button onClick={() => { onClearAll(); setDataMenuOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:bg-zinc-800"><Ic name="trash" size={14} /> Clear all data</button>
+            </div>
+          </>
+        )}
+      </div>
+      <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={onImportFileChange} />
+      <button onClick={onAddArtist} className="rl-glow-hover-red hidden md:flex items-center gap-1.5 bg-red-600 hover:bg-red-500 text-white font-medium text-sm px-3 py-2 rounded-lg"><Ic name="plus" size={16} /><span>Add artist</span></button>
+    </header>
+  );
+}
+
+function DashboardView({ artists, stats, recentActivity, onOpenArtist }) {
+  const stageData = STAGES.map((s) => ({ name: s.label, count: artists.filter((a) => a.stage === s.id).length, color: s.color }));
+  const monthly = getMonthlyRevenue(artists);
+  const followUps = artists.filter((a) => a.nextFollowUp && a.stage !== "won" && a.stage !== "lost").sort((a, b) => (a.nextFollowUp > b.nextFollowUp ? 1 : -1)).slice(0, 5);
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard icon="users" label="Total artists" numericValue={stats.total} accent />
+        <StatCard icon="messageSquare" label="Active conversations" numericValue={stats.active} />
+        <StatCard icon="trendingUp" label="Response rate" numericValue={stats.responseRate} formatFn={(v) => `${Math.round(v)}%`} sub={`${stats.repliesReceived} replies`} />
+        <StatCard icon="dollarSign" label="Revenue generated" numericValue={stats.revenue} formatFn={formatCurrency} accent />
+        <StatCard icon="target" label="Deals closed" numericValue={stats.dealsClosed} />
+        <StatCard icon="clock" label="Follow-ups due today" numericValue={stats.followUpsDue} />
+        <StatCard icon="flame" label="Hot leads" numericValue={stats.hotLeads} accent />
+        <StatCard icon="database" label="Replies received" numericValue={stats.repliesReceived} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <h3 className="font-display text-lg text-zinc-100 mb-3">Monthly revenue</h3>
+          {stats.revenue > 0 ? <MiniBarChart data={monthly} valueKey="revenue" labelKey="label" color="#dc2626" formatValue={formatCurrency} /> : <p className="text-sm text-zinc-500 py-10 text-center">No closed deals yet.</p>}
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <h3 className="font-display text-lg text-zinc-100 mb-3">Pipeline distribution</h3>
+          <MiniBarChart data={stageData} valueKey="count" labelKey="name" color="#3b82f6" />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <h3 className="font-display text-lg text-zinc-100 mb-3">Follow-ups due soon</h3>
+          {followUps.length === 0 ? <p className="text-sm text-zinc-500 py-6 text-center">Nothing on the horizon.</p> : (
+            <ul className="space-y-2">{followUps.map((a) => (
+              <li key={a.id} onClick={() => onOpenArtist(a)} className="flex items-center justify-between bg-zinc-800 hover:bg-zinc-700 rounded-lg px-3 py-2 cursor-pointer">
+                <span className="text-sm text-zinc-200">{a.name}</span><span className="text-xs font-mono text-zinc-400">{a.nextFollowUp}</span>
+              </li>
+            ))}</ul>
+          )}
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <h3 className="font-display text-lg text-zinc-100 mb-3">Recent activity</h3>
+          {recentActivity.length === 0 ? <p className="text-sm text-zinc-500 py-6 text-center">Your actions will show up here.</p> : (
+            <ul className="space-y-2 max-h-56 overflow-y-auto">{recentActivity.map((t) => (
+              <li key={t.id} className="flex items-center justify-between text-sm gap-2">
+                <span className="text-zinc-300 truncate min-w-0">{t.artistName ? `${t.artistName}: ` : ""}{t.text}</span>
+                <span className="text-xs font-mono text-zinc-500 whitespace-nowrap flex-none">{timeAgo(t.ts)}</span>
+              </li>
+            ))}</ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PipelineView({ artists, onOpenArtist, onMoveStage, cardHandlers }) {
+  const [dragOverStage, setDragOverStage] = useState(null);
+  function handleDrop(e, stageId) { e.preventDefault(); const id = e.dataTransfer.getData("text/plain"); if (id) onMoveStage(id, stageId); setDragOverStage(null); }
+  return (
+    <div className="p-4 md:p-6 h-full overflow-x-auto">
+      <div className="flex gap-4 h-full" style={{ minWidth: 1000 }}>
+        {STAGES.map((stage) => {
+          const stageArtists = artists.filter((a) => a.stage === stage.id);
+          return (
+            <div key={stage.id} onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.id); }} onDragLeave={() => setDragOverStage(null)} onDrop={(e) => handleDrop(e, stage.id)}
+              style={{ minWidth: 220 }} className={`flex-1 rounded-xl border ${dragOverStage === stage.id ? "border-blue-500 rl-glow-blue" : "border-zinc-800"} bg-zinc-900 flex flex-col transition-colors`}>
+              <div className="px-3 py-3 border-b border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background: stage.color }} /><span className="text-sm font-medium text-zinc-200">{stage.label}</span></div>
+                <span className="text-xs font-mono text-zinc-500">{stageArtists.length}</span>
+              </div>
+              <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                {stageArtists.length === 0 ? <p className="text-xs text-zinc-600 text-center py-6">Drag an artist here</p> : stageArtists.map((a, i) => (
+                  <ArtistCard key={a.id} artist={a} onOpen={onOpenArtist} onMoveStage={onMoveStage} onDragStart={(e, id) => e.dataTransfer.setData("text/plain", id)} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} {...cardHandlers} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ArtistsView({ artists, onOpenArtist, onMoveStage, cardHandlers, filterStage, setFilterStage, filterGenre, setFilterGenre, filterPriority, setFilterPriority, genres }) {
+  return (
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Ic name="filter" size={14} className="text-zinc-500" />
+        <select value={filterStage} onChange={(e) => setFilterStage(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-md text-xs px-2 py-1.5 text-zinc-300"><option value="all">All stages</option>{STAGES.map((s) => (<option key={s.id} value={s.id}>{s.label}</option>))}</select>
+        <select value={filterGenre} onChange={(e) => setFilterGenre(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-md text-xs px-2 py-1.5 text-zinc-300"><option value="all">All genres</option>{genres.map((g) => (<option key={g} value={g}>{g}</option>))}</select>
+        <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="bg-zinc-900 border border-zinc-800 rounded-md text-xs px-2 py-1.5 text-zinc-300"><option value="all">All priorities</option><option value="high">High priority</option><option value="medium">Medium priority</option><option value="low">Low priority</option></select>
+        <span className="text-xs text-zinc-500 ml-auto">{artists.length} artist{artists.length === 1 ? "" : "s"}</span>
+      </div>
+      {artists.length === 0 ? <div className="text-center py-16 text-zinc-500 text-sm">No artists match these filters yet.</div> : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {artists.map((a, i) => (<ArtistCard key={a.id} artist={a} onOpen={onOpenArtist} onMoveStage={onMoveStage} onDragStart={(e, id) => e.dataTransfer.setData("text/plain", id)} style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }} {...cardHandlers} />))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TasksView({ artists, onOpenArtist, onSetFollowUp, onCompleteFollowUp, onQuickFollowUp }) {
+  const today = todayStr();
+  const active = (a) => a.stage !== "won" && a.stage !== "lost";
+  const overdue = artists.filter((a) => active(a) && a.nextFollowUp && a.nextFollowUp < today);
+  const dueToday = artists.filter((a) => active(a) && a.nextFollowUp === today);
+  const upcoming = artists.filter((a) => active(a) && a.nextFollowUp && a.nextFollowUp > today).sort((a, b) => (a.nextFollowUp > b.nextFollowUp ? 1 : -1));
+  const needsSchedule = artists.filter((a) => active(a) && !a.nextFollowUp);
+  function Row({ a, showSuggestion }) {
+    const suggestion = showSuggestion ? suggestFollowUp(a) : null;
+    return (
+      <div className="flex items-center justify-between gap-3 bg-zinc-800 rounded-lg px-3 py-2.5">
+        <button onClick={() => onOpenArtist(a)} className="text-left flex-1 min-w-0">
+          <div className="text-sm text-zinc-100 truncate">{a.name || "Unnamed artist"}</div>
+          <div className="text-xs text-zinc-500">{STAGES.find((s) => s.id === a.stage)?.label}{a.nextFollowUp ? ` · ${a.nextFollowUp}` : ""}</div>
+        </button>
+        {suggestion ? (
+          <button onClick={() => onSetFollowUp(a.id, suggestion.date, suggestion.label)} className="text-xs font-medium bg-zinc-700 hover:bg-zinc-600 text-zinc-200 px-2.5 py-1.5 rounded-md flex-none whitespace-nowrap">Suggest: Day {suggestion.day}</button>
+        ) : (
+          <div className="flex gap-1.5 flex-none">
+            <button onClick={() => onCompleteFollowUp(a.id)} className="text-zinc-400 hover:text-green-400" title="Mark done"><Ic name="checkCircle" size={16} /></button>
+            <button onClick={() => onQuickFollowUp(a.id, 7)} className="text-zinc-400 hover:text-blue-400" title="Push 7 days"><Ic name="clock" size={16} /></button>
+          </div>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div><h3 className="font-display text-lg text-red-400 mb-2">Overdue ({overdue.length})</h3>{overdue.length === 0 ? <p className="text-sm text-zinc-500">Nothing overdue. Nice.</p> : <div className="space-y-2">{overdue.map((a) => <Row key={a.id} a={a} />)}</div>}</div>
+      <div><h3 className="font-display text-lg text-blue-400 mb-2">Due today ({dueToday.length})</h3>{dueToday.length === 0 ? <p className="text-sm text-zinc-500">Nothing due today.</p> : <div className="space-y-2">{dueToday.map((a) => <Row key={a.id} a={a} />)}</div>}</div>
+      <div><h3 className="font-display text-lg text-zinc-200 mb-2">Upcoming ({upcoming.length})</h3>{upcoming.length === 0 ? <p className="text-sm text-zinc-500">Nothing scheduled.</p> : <div className="space-y-2">{upcoming.slice(0, 10).map((a) => <Row key={a.id} a={a} />)}</div>}</div>
+      <div><h3 className="font-display text-lg text-zinc-200 mb-2">Needs a follow-up date ({needsSchedule.length})</h3>{needsSchedule.length === 0 ? <p className="text-sm text-zinc-500">Everyone active has a follow-up scheduled.</p> : <div className="space-y-2">{needsSchedule.map((a) => <Row key={a.id} a={a} showSuggestion />)}</div>}</div>
+    </div>
+  );
+}
+
+function AnalyticsView({ artists }) {
+  const won = artists.filter((a) => a.stage === "won");
+  const lost = artists.filter((a) => a.stage === "lost");
+  const revenue = won.reduce((s, a) => s + (parseFloat(a.saleAmount) || 0), 0);
+  const conversionRate = won.length + lost.length ? Math.round((won.length / (won.length + lost.length)) * 100) : 0;
+  const avgDeal = won.length ? revenue / won.length : 0;
+  const byGenre = {};
+  won.forEach((a) => { const g = a.genre || "Unspecified"; byGenre[g] = (byGenre[g] || 0) + (parseFloat(a.saleAmount) || 0); });
+  const topGenreEntry = Object.entries(byGenre).sort((a, b) => b[1] - a[1])[0];
+  const monthly = getMonthlyRevenue(artists);
+  const funnelStages = ["intro", "value", "negotiation", "won"];
+  const funnelCounts = funnelStages.map((id) => ({ id, label: STAGES.find((s) => s.id === id).label, color: STAGES.find((s) => s.id === id).color, count: artists.filter((a) => a.stage === id).length }));
+  const maxCount = Math.max(1, ...funnelCounts.map((c) => c.count));
+  const pipelineValue = ["intro", "value", "negotiation"].map((id) => ({ id, label: STAGES.find((s) => s.id === id).label, color: STAGES.find((s) => s.id === id).color, value: artists.filter((a) => a.stage === id).reduce((s, a) => s + (parseFloat(a.estimatedDealValue) || parseFloat(a.priceOffered) || 0), 0) }));
+  const maxValue = Math.max(1, ...pipelineValue.map((c) => c.value));
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard icon="dollarSign" label="Total revenue" numericValue={revenue} formatFn={formatCurrency} accent />
+        <StatCard icon="target" label="Conversion rate" numericValue={conversionRate} formatFn={(v) => `${Math.round(v)}%`} sub={`${won.length} won · ${lost.length} lost`} />
+        <StatCard icon="trendingUp" label="Avg deal size" numericValue={avgDeal} formatFn={formatCurrency} />
+        <StatCard icon="flame" label="Top genre" value={topGenreEntry ? topGenreEntry[0] : "—"} sub={topGenreEntry ? formatCurrency(topGenreEntry[1]) : "No deals yet"} accent />
+      </div>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+        <h3 className="font-display text-lg text-zinc-100 mb-3">Monthly revenue trend</h3>
+        {revenue > 0 ? <MiniBarChart data={monthly} valueKey="revenue" labelKey="label" color="#dc2626" formatValue={formatCurrency} /> : <p className="text-sm text-zinc-500 py-10 text-center">No closed deals yet.</p>}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <h3 className="font-display text-lg text-zinc-100 mb-3">Pipeline funnel</h3>
+          <p className="text-xs text-zinc-600 mb-3">Current artists sitting at each stage.</p>
+          <div className="space-y-2">{funnelCounts.map((c) => (
+            <div key={c.id} className="flex items-center gap-3">
+              <span className="w-28 text-xs text-zinc-400 font-mono shrink-0">{c.label}</span>
+              <div className="flex-1 bg-zinc-800 rounded h-6 overflow-hidden"><GrowBar widthPercent={(c.count / maxCount) * 100} color={c.color} /></div>
+              <span className="w-8 text-right text-xs font-mono text-zinc-400">{c.count}</span>
+            </div>
+          ))}</div>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <h3 className="font-display text-lg text-zinc-100 mb-3">Estimated pipeline value by stage</h3>
+          <p className="text-xs text-zinc-600 mb-3">Open deal value still in play, by stage.</p>
+          <div className="space-y-2">{pipelineValue.map((c) => (
+            <div key={c.id} className="flex items-center gap-3">
+              <span className="w-28 text-xs text-zinc-400 font-mono shrink-0">{c.label}</span>
+              <div className="flex-1 bg-zinc-800 rounded h-6 overflow-hidden"><GrowBar widthPercent={(c.value / maxValue) * 100} color={c.color} /></div>
+              <span className="w-16 text-right text-xs font-mono text-zinc-400">{formatCurrency(c.value)}</span>
+            </div>
+          ))}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BottomTabBar({ view, setView }) {
+  const items = [
+    { id: "dashboard", label: "Home", icon: "dashboard" },
+    { id: "pipeline", label: "Pipeline", icon: "pipeline" },
+    { id: "artists", label: "Artists", icon: "database" },
+    { id: "tasks", label: "Tasks", icon: "listChecks" },
+    { id: "analytics", label: "Stats", icon: "barChart" },
+  ];
+  return (
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-zinc-950/95 border-t border-zinc-800 flex items-stretch"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)", backdropFilter: "blur(12px)" }}
+    >
+      {items.map((it) => {
+        const active = view === it.id;
+        return (
+          <button
+            key={it.id}
+            onClick={() => setView(it.id)}
+            className="rl-tappable flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5"
+          >
+            <Ic name={it.icon} size={20} className={active ? "text-blue-400" : "text-zinc-500"} />
+            <span className={`text-[10px] font-mono uppercase tracking-wide ${active ? "text-blue-400" : "text-zinc-500"}`}>{it.label}</span>
+            {active && <div className="w-1 h-1 rounded-full bg-blue-400 mt-0.5" />}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+function FAB({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="rl-fab rl-glow-red md:hidden fixed right-4 z-30 w-14 h-14 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center shadow-2xl rl-tappable"
+      style={{ bottom: "calc(env(safe-area-inset-bottom) + 76px)" }}
+    >
+      <Ic name="plus" size={26} />
+    </button>
+  );
+}
+
+function App() {
+  const [artists, setArtists] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [view, setView] = useState("dashboard");
+  const [search, setSearch] = useState("");
+  const [filterStage, setFilterStage] = useState("all");
+  const [filterGenre, setFilterGenre] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [modalArtist, setModalArtist] = useState(null);
+  const [modalIsNew, setModalIsNew] = useState(false);
+  const [dismissedNotifs, setDismissedNotifs] = useState(new Set());
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [dataMenuOpen, setDataMenuOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const [syncConfig, setSyncConfig] = useState(null);
+  const [syncStatus, setSyncStatus] = useState("idle");
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [connectOpen, setConnectOpen] = useState(false);
+  const fileInputRef = useRef(null);
+  const toastTimer = useRef(null);
+  const dismissedRef = useRef(dismissedNotifs);
+  dismissedRef.current = dismissedNotifs;
+
+  function showToast(msg) {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2200);
+  }
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LOCAL_KEY);
+      if (raw) { const parsed = JSON.parse(raw); setArtists(parsed.artists || []); setDismissedNotifs(new Set(parsed.dismissedNotifs || [])); }
+    } catch (e) { console.error("Local load failed", e); }
+    try {
+      const cfgRaw = localStorage.getItem(CONFIG_KEY);
+      if (cfgRaw) setSyncConfig(JSON.parse(cfgRaw));
+    } catch (e) {}
+    setLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    function onKey(e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setCmdOpen((v) => !v); } }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  async function pullFromCloud(config) {
+    setSyncStatus("syncing");
+    try {
+      const row = await supabaseGetRow(config);
+      if (row && row.data) {
+        const localRaw = localStorage.getItem(LOCAL_KEY);
+        const localUpdated = localRaw ? JSON.parse(localRaw).updated_at : null;
+        if (!localUpdated || new Date(row.updated_at) > new Date(localUpdated)) {
+          setArtists(row.data.artists || []);
+          setDismissedNotifs(new Set(row.data.dismissedNotifs || []));
+          localStorage.setItem(LOCAL_KEY, JSON.stringify({ ...row.data, updated_at: row.updated_at }));
+        }
+      }
+      setSyncStatus("synced");
+      setLastSyncedAt(new Date().toISOString());
+    } catch (e) {
+      console.error("Sync pull failed", e);
+      setSyncStatus("error");
+    }
+  }
+
+  useEffect(() => {
+    if (!syncConfig || !loaded) return;
+    pullFromCloud(syncConfig);
+    const interval = setInterval(() => pullFromCloud(syncConfig), 30000);
+    function onFocus() { pullFromCloud(syncConfig); }
+    window.addEventListener("focus", onFocus);
+    return () => { clearInterval(interval); window.removeEventListener("focus", onFocus); };
+  }, [syncConfig, loaded]);
+
+  async function persistArtists(next, dismissedOverride) {
+    setArtists(next);
+    const dismissed = dismissedOverride || dismissedRef.current;
+    const payload = { artists: next, dismissedNotifs: Array.from(dismissed) };
+    const stamped = { ...payload, updated_at: new Date().toISOString() };
+    try {
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(stamped));
+    } catch (e) {
+      console.error("Local save failed", e);
+      return false;
+    }
+    if (!syncConfig) return true;
+    setSyncStatus("syncing");
+    try {
+      await supabasePutRow(syncConfig, payload);
+      setSyncStatus("synced");
+      setLastSyncedAt(new Date().toISOString());
+    } catch (e) {
+      console.error("Cloud sync failed", e);
+      setSyncStatus("error");
+    }
+    return true;
+  }
+
+  function dismissNotification(id) {
+    setDismissedNotifs((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      persistArtists(artists, next);
+      return next;
+    });
+  }
+
+  function handleOpenArtist(artist) { setModalArtist(artist); setModalIsNew(false); }
+  function handleAddArtist() { setModalArtist(emptyArtist()); setModalIsNew(true); }
+
+  async function handleSaveArtist(form) {
+    const exists = artists.some((a) => a.id === form.id);
+    let next;
+    if (exists) {
+      const prev = artists.find((a) => a.id === form.id);
+      const autoEntries = buildAutoTimelineEntries(prev, form);
+      const updated = { ...form, timeline: [...autoEntries, ...(form.timeline || [])] };
+      next = artists.map((a) => (a.id === form.id ? updated : a));
+    } else {
+      const created = { ...form, timeline: [{ id: uid(), type: "note", text: "Profile created", ts: new Date().toISOString() }, ...(form.timeline || [])] };
+      next = [created, ...artists];
+    }
+    await persistArtists(next);
+    setModalArtist(null);
+    showToast(exists ? "Artist updated" : "Artist added");
+  }
+
+  async function handleDeleteArtist(id) {
+    const a = artists.find((x) => x.id === id);
+    await persistArtists(artists.filter((x) => x.id !== id));
+    setModalArtist(null);
+    showToast(`Removed ${a?.name || "artist"}`);
+  }
+
+  async function handleMoveStage(id, newStage) {
+    const a = artists.find((x) => x.id === id);
+    if (!a || a.stage === newStage) return;
+    const entry = { id: uid(), type: "stage", text: `Moved to ${STAGES.find((s) => s.id === newStage)?.label}`, ts: new Date().toISOString() };
+    const next = artists.map((x) => (x.id === id ? { ...x, stage: newStage, timeline: [entry, ...(x.timeline || [])] } : x));
+    await persistArtists(next);
+    showToast(`Moved ${a.name || "artist"} to ${STAGES.find((s) => s.id === newStage)?.label}`);
+  }
+
+  async function handleQuickFollowUp(id, days) {
+    const date = new Date(); date.setDate(date.getDate() + days);
+    const iso = date.toISOString().slice(0, 10);
+    const entry = { id: uid(), type: "followup", text: `Follow-up scheduled for ${iso}`, ts: new Date().toISOString() };
+    const next = artists.map((x) => (x.id === id ? { ...x, nextFollowUp: iso, timeline: [entry, ...(x.timeline || [])] } : x));
+    await persistArtists(next);
+    showToast(`Follow-up set for ${iso}`);
+  }
+
+  async function handleSetFollowUpDate(id, iso, label) {
+    const entry = { id: uid(), type: "followup", text: `Follow-up scheduled for ${iso}${label ? ` (${label})` : ""}`, ts: new Date().toISOString() };
+    const next = artists.map((x) => (x.id === id ? { ...x, nextFollowUp: iso, timeline: [entry, ...(x.timeline || [])] } : x));
+    await persistArtists(next);
+    showToast("Follow-up scheduled");
+  }
+
+  async function handleCompleteFollowUp(id) {
+    const a = artists.find((x) => x.id === id);
+    const entry = { id: uid(), type: "followup", text: "Follow-up completed", ts: new Date().toISOString() };
+    const next = artists.map((x) => (x.id === id ? { ...x, nextFollowUp: "", timeline: [entry, ...(x.timeline || [])] } : x));
+    await persistArtists(next);
+    showToast(`Marked follow-up with ${a?.name || "artist"} as done`);
+  }
+
+  function handleQuickCopyHandle(a) { copyToClipboard(`@${(a.igHandle || "").replace(/^@/, "")}`); showToast("Instagram handle copied"); }
+
+  async function handleQuickCopyDM(a) {
+    copyToClipboard(quickDmTemplate(a));
+    const entry = { id: uid(), type: "dm", text: "Quick DM template copied", ts: new Date().toISOString() };
+    const next = artists.map((x) => (x.id === a.id ? { ...x, timeline: [entry, ...(x.timeline || [])] } : x));
+    await persistArtists(next);
+    showToast("DM copied to clipboard");
+  }
+
+  function handleQuickOpenIG(a) {
+    const url = a.igUrl || (a.igHandle ? `https://instagram.com/${a.igHandle.replace(/^@/, "")}` : "");
+    if (!url) { showToast("No Instagram link saved for this artist"); return; }
+    window.open(url, "_blank");
+  }
+
+  async function handleLoadSample() { await persistArtists(sampleArtists()); showToast("Sample data loaded"); }
+  async function handleClearAll() { if (!window.confirm("Clear all artists? This can't be undone.")) return; await persistArtists([]); showToast("All data cleared"); }
+  function handleExportCSV() { if (artists.length === 0) { showToast("Nothing to export yet"); return; } exportCSV(artists); showToast("CSV exported"); }
+  function handleImportClick() { fileInputRef.current?.click(); }
+  function handleImportFileChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    parseCSVFile(file, async (imported) => { await persistArtists([...imported, ...artists]); showToast(`Imported ${imported.length} artist${imported.length === 1 ? "" : "s"}`); }, () => showToast("Couldn't read that CSV file"));
+    e.target.value = "";
+  }
+
+  function handleConnectSave(cfg) {
+    setSyncConfig(cfg);
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
+    setConnectOpen(false);
+    showToast("Connected — syncing now");
+    persistArtists(artists);
+  }
+  function handleDisconnect() {
+    setSyncConfig(null);
+    localStorage.removeItem(CONFIG_KEY);
+    setSyncStatus("idle");
+    setConnectOpen(false);
+    showToast("Disconnected — saving locally only");
+  }
+
+  const genres = useMemo(() => Array.from(new Set(artists.map((a) => a.genre).filter(Boolean))), [artists]);
+
+  const filteredArtists = useMemo(() => artists.filter((a) => {
+    if (search) { const haystack = `${a.name} ${a.igHandle} ${a.genre} ${a.location}`.toLowerCase(); if (!haystack.includes(search.toLowerCase())) return false; }
+    if (filterStage !== "all" && a.stage !== filterStage) return false;
+    if (filterGenre !== "all" && a.genre !== filterGenre) return false;
+    if (filterPriority !== "all" && a.priority !== filterPriority) return false;
+    return true;
+  }), [artists, search, filterStage, filterGenre, filterPriority]);
+
+  const stats = useMemo(() => {
+    const total = artists.length;
+    const activeCount = artists.filter((a) => a.stage !== "won" && a.stage !== "lost").length;
+    const repliesReceived = artists.filter((a) => a.replied).length;
+    const contacted = artists.filter((a) => a.dateContacted).length;
+    const responseRate = contacted ? Math.round((repliesReceived / contacted) * 100) : 0;
+    const dealsClosed = artists.filter((a) => a.stage === "won").length;
+    const revenue = artists.filter((a) => a.stage === "won").reduce((s, a) => s + (parseFloat(a.saleAmount) || 0), 0);
+    const today = todayStr();
+    const followUpsDue = artists.filter((a) => a.nextFollowUp && a.nextFollowUp <= today && a.stage !== "won" && a.stage !== "lost").length;
+    const hotLeads = artists.filter((a) => calcLeadScore(a) >= 90).length;
+    return { total, active: activeCount, repliesReceived, responseRate, dealsClosed, revenue, followUpsDue, hotLeads };
+  }, [artists]);
+
+  const notifications = useMemo(() => {
+    const today = todayStr();
+    const list = [];
+    artists.forEach((a) => {
+      const score = calcLeadScore(a);
+      if (a.replied && !dismissedNotifs.has(`reply-${a.id}`)) list.push({ id: `reply-${a.id}`, type: "reply", typeLabel: NOTIF_LABELS.reply, artist: a, text: `${a.name || "An artist"} replied to your message`, ts: a.lastContact || a.createdAt });
+      if (score >= 90 && !dismissedNotifs.has(`hot-${a.id}`)) list.push({ id: `hot-${a.id}`, type: "hot", typeLabel: NOTIF_LABELS.hot, artist: a, text: `${a.name || "An artist"} is now a hot lead (${score})`, ts: a.createdAt });
+      if (a.nextFollowUp && a.nextFollowUp < today && a.stage !== "won" && a.stage !== "lost" && !dismissedNotifs.has(`overdue-${a.id}`)) list.push({ id: `overdue-${a.id}`, type: "overdue", typeLabel: NOTIF_LABELS.overdue, artist: a, text: `Follow-up with ${a.name || "an artist"} is overdue`, ts: a.nextFollowUp });
+      if (a.stage === "negotiation" && !dismissedNotifs.has(`negotiation-${a.id}`)) list.push({ id: `negotiation-${a.id}`, type: "negotiation", typeLabel: NOTIF_LABELS.negotiation, artist: a, text: `${a.name || "An artist"} is in active negotiation`, ts: a.lastContact || a.createdAt });
+    });
+    return list.sort((x, y) => (x.ts < y.ts ? 1 : -1));
+  }, [artists, dismissedNotifs]);
+
+  const recentActivity = useMemo(() => {
+    const all = artists.flatMap((a) => (a.timeline || []).map((t) => ({ ...t, artistName: a.name })));
+    return all.sort((x, y) => (x.ts < y.ts ? 1 : -1)).slice(0, 8);
+  }, [artists]);
+
+  const commandItems = useMemo(() => {
+    const navItems = [
+      { id: "nav-dashboard", label: "Go to Dashboard", action: () => setView("dashboard") },
+      { id: "nav-pipeline", label: "Go to Pipeline", action: () => setView("pipeline") },
+      { id: "nav-artists", label: "Go to Artists", action: () => setView("artists") },
+      { id: "nav-tasks", label: "Go to Tasks", action: () => setView("tasks") },
+      { id: "nav-analytics", label: "Go to Analytics", action: () => setView("analytics") },
+      { id: "add-artist", label: "Add new artist", action: handleAddArtist },
+      { id: "open-notifs", label: "Open notifications", action: () => setNotifOpen(true) },
+      { id: "export-csv", label: "Export artists to CSV", action: handleExportCSV },
+      { id: "open-sync", label: "Open sync settings", action: () => setConnectOpen(true) },
+    ];
+    const artistItems = artists.map((a) => ({ id: `artist-${a.id}`, label: `Open ${a.name || "Unnamed artist"}`, sub: a.genre, action: () => handleOpenArtist(a) }));
+    return [...navItems, ...artistItems];
+  }, [artists]);
+
+  const cardHandlers = { onCopyHandle: handleQuickCopyHandle, onCopyDM: handleQuickCopyDM, onOpenIG: handleQuickOpenIG, onQuickFollowUp: handleQuickFollowUp };
+
+  if (!loaded) return (
+    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center">
+      <span className="rl-pop-in font-display text-4xl text-red-500" style={{ animation: "rlPopIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both, rlGlowPulseRed 2s ease-in-out infinite" }}>R$L</span>
+    </div>
+  );
+
+  return (
+    <div className="h-screen w-full bg-zinc-950 text-zinc-200 flex font-sans overflow-hidden">
+      <Sidebar view={view} setView={setView} collapsed={collapsed} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} stats={stats} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar search={search} setSearch={setSearch} onAddArtist={handleAddArtist} setMobileOpen={setMobileOpen} collapsed={collapsed} setCollapsed={setCollapsed}
+          notifications={notifications} notifOpen={notifOpen} setNotifOpen={setNotifOpen} onDismissNotif={dismissNotification} onOpenArtist={handleOpenArtist}
+          dataMenuOpen={dataMenuOpen} setDataMenuOpen={setDataMenuOpen} onExportCSV={handleExportCSV} onImportClick={handleImportClick} onClearAll={handleClearAll}
+          fileInputRef={fileInputRef} onImportFileChange={handleImportFileChange} syncStatus={syncConfig ? syncStatus : "idle"} onOpenConnect={() => setConnectOpen(true)} />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 76px)" }}>
+          {artists.length === 0 && (
+            <div className="px-4 md:px-6 pt-4 rl-fade-in">
+              <div className="bg-zinc-900 border border-dashed border-zinc-700 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+                <p className="text-sm text-zinc-400">Your CRM is empty. Add your first artist, load sample data, or import a CSV.</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={handleImportClick} className="text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-md">Import CSV</button>
+                  <button onClick={handleLoadSample} className="text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded-md">Load sample data</button>
+                  <button onClick={handleAddArtist} className="rl-glow-hover-red text-xs font-medium bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-md">Add artist</button>
+                </div>
+              </div>
+            </div>
+          )}
+          <div key={view} className="rl-fade-in">
+            {view === "dashboard" && <DashboardView artists={artists} stats={stats} recentActivity={recentActivity} onOpenArtist={handleOpenArtist} />}
+            {view === "pipeline" && <PipelineView artists={filteredArtists} onOpenArtist={handleOpenArtist} onMoveStage={handleMoveStage} cardHandlers={cardHandlers} />}
+            {view === "artists" && (
+              <ArtistsView artists={filteredArtists} onOpenArtist={handleOpenArtist} onMoveStage={handleMoveStage} cardHandlers={cardHandlers}
+                filterStage={filterStage} setFilterStage={setFilterStage} filterGenre={filterGenre} setFilterGenre={setFilterGenre}
+                filterPriority={filterPriority} setFilterPriority={setFilterPriority} genres={genres} />
+            )}
+            {view === "tasks" && <TasksView artists={artists} onOpenArtist={handleOpenArtist} onSetFollowUp={handleSetFollowUpDate} onCompleteFollowUp={handleCompleteFollowUp} onQuickFollowUp={handleQuickFollowUp} />}
+            {view === "analytics" && <AnalyticsView artists={artists} />}
+          </div>
+        </main>
+      </div>
+      <BottomTabBar view={view} setView={setView} />
+      <FAB onClick={handleAddArtist} />
+      {modalArtist && <ArtistModal artist={modalArtist} isNew={modalIsNew} onClose={() => setModalArtist(null)} onSave={handleSaveArtist} onDelete={handleDeleteArtist} />}
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} items={commandItems} />
+      <ConnectModal open={connectOpen} onClose={() => setConnectOpen(false)} config={syncConfig} onSave={handleConnectSave} onDisconnect={handleDisconnect} syncStatus={syncStatus} lastSyncedAt={lastSyncedAt} />
+      {toast && <div className="rl-fade-in fixed z-50 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm px-4 py-2 rounded-lg shadow-2xl" style={{ bottom: "calc(env(safe-area-inset-bottom) + 88px)" }}>{toast}</div>}
+    </div>
+  );
+}
+
+if (window.__rlBootTimer) clearTimeout(window.__rlBootTimer);
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
+
